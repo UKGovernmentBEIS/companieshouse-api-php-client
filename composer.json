@@ -1,5 +1,5 @@
 {
-    "name": "UKGovernmentBEIS/companieshouse-api-php-client",
+    "name": "uk-government-beis/companieshouse-php-client",
     "description": "API Wrapper for the Companies House API",
     "license": "MIT",
     "require": {
