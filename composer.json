@@ -1,18 +1,21 @@
 {
-    "name": "UKGovernmentBEIS/companieshouse-api-php-client",
+    "name": "UKGovernmentBEIS/CompaniesHouse",
     "description": "API Wrapper for the Companies House API",
     "license": "MIT",
     "require": {
-        "php": ">=5.5",
-        "guzzlehttp/guzzle": "^5.3.3|^6.2.1|^7.0"
+        "php": ">=7.2",
+        "guzzlehttp/guzzle" : "^6.2.1|^7.0",
+        "ext-curl": "*"
     },
     "require-dev": {
         "phpspec/phpspec": "~3.0"
     },
-    "config": {
-        "bin-dir": "bin"
+    "suggest": {
+        "ext-curl": "To send requests using cURL"
     },
     "autoload": {
-        "psr-4": {"UKGovernmentBEIS\\CompaniesHouse\\Api\\Client\\": "src/UKGovernmentBEIS/CompaniesHouse/Api/Client/"}
+        "psr-4": {
+            "UKGovernmentBEIS\\CompaniesHouse\\": "src/"
+        }
     }
 }
