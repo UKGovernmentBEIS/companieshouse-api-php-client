@@ -1,10 +1,10 @@
 {
-    "name": "netsensia/companieshouse-api-php-client",
+    "name": "UKGovernmentBEIS/companieshouse-api-php-client",
     "description": "API Wrapper for the Companies House API",
     "license": "MIT",
     "require": {
-        "php": ">=5.4.0",
-        "guzzlehttp/guzzle": "^6.1.0"
+        "php": ">=5.5",
+        "guzzlehttp/guzzle": "^5.3.3|^6.2.1|^7.0"
     },
     "require-dev": {
         "phpspec/phpspec": "~3.0"
@@ -13,6 +13,6 @@
         "bin-dir": "bin"
     },
     "autoload": {
-        "psr-4": {"Netsensia\\CompaniesHouse\\Api\\Client\\": "src/Netsensia/CompaniesHouse/Api/Client/"}
+        "psr-4": {"UKGovernmentBEIS\\CompaniesHouse\\Api\\Client\\": "src/UKGovernmentBEIS/CompaniesHouse/Api/Client/"}
     }
 }
