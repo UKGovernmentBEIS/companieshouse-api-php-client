@@ -1,5 +1,5 @@
 <?php
-namespace Netsensia\CompaniesHouse\Api\Client;
+namespace UKGovernmentBEIS\CompaniesHouse;
 
 use GuzzleHttp\Client as HttpClient;
 use http\Exception\BadMessageException;
@@ -60,7 +60,7 @@ class Client {
             ]);
         }
 
-        return $this->guzzleClient;
+        return $this->httpClient;
     }
 
     //-------------------------------------------
@@ -79,7 +79,7 @@ class Client {
 
         return $this->handleResponse($response);
     }
-    
+
     /**
      * Company profile
      *
@@ -169,7 +169,7 @@ class Client {
 
     /**
      * Handle the API response.
-     * 
+     *
      * @param $response
      * @return array|null
      */
