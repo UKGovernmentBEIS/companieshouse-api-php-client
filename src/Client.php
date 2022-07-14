@@ -2,8 +2,10 @@
 namespace UKGovernmentBEIS\CompaniesHouse;
 
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\ClientException;
 use http\Exception\BadMessageException;
 use http\Exception\InvalidArgumentException;
+use Psr\Http\Message\ResponseInterface;
 
 
 class Client {
@@ -111,7 +113,7 @@ class Client {
      *
      * @return array|null
      */
-    public function searchAll(string $q, int $items_per_page = NULL, int $start_index = NULL) {
+    public function searchAll(string $q, int $items_per_page = 10, int $start_index = 0) {
         $response = $this->client()
             ->get("/search", [
                 'query' => array_filter([
@@ -141,7 +143,7 @@ class Client {
      *
      * @return array|null
      */
-    public function searchCompanies(string $q, int $items_per_page = null, int $start_index = null, string $restrictions = null) {
+    public function searchCompanies(string $q, int $items_per_page = 10, int $start_index = 0, string $restrictions = null) {
         $response = $this->client()
             ->get("/search", [
                 'query' => array_filter([
@@ -170,8 +172,16 @@ class Client {
     /**
      * Handle the API response.
      *
-     * @param $response
-     * @return array|null
+     * @param ResponseInterface $response
+     *   The response object.
+     *
+     * @return array
+     *   The response body returned from a successful request.
+     *
+     * @throws ApiException|NotFoundException|UnauthorisedException
+     *   Known API exception errors.
+     * @throws ClientException
+     *   Unknown client errors, including rate limiting errors.
      */
     private function handleResponse($response) {
         switch($response->getStatusCode()){
@@ -180,14 +190,16 @@ class Client {
 
                 // The expected response should always be JSON array.
                 if(!is_array($body)){
-                    throw new BadMessageException( 'Malformed JSON response from server', $response->getStatusCode(), $body, $response );
+                    throw new BadMessageException('Malformed JSON response from server', $response->getStatusCode(), $body, $response);
                 }
 
                 return $body;
+            case 401:
+                throw new UnauthorisedException($response->getMessage(), $response->getStatusCode(), $response);
             case 404:
-                return null;
+                throw new NotFoundException($response->getMessage(), $response->getStatusCode(), $response);
             default:
-                return "HTTP ERROR:{$response->getStatusCode()}";
+                throw new ApiException($response->getMessage(), $response->getStatusCode(), $response);
         }
     }
 
