@@ -12,9 +12,23 @@ class ApiException extends \RuntimeException {
      */
     private ResponseInterface $response;
 
+    /**
+     * The body of the API response.
+     *
+     * @var mixed
+     */
+    private mixed $body;
+
 
     public function __construct(string $message, int $code, ResponseInterface $response) {
         $this->response = $response;
+
+        // Attempt to decode the message body.
+        if ($response && $body = $response->getBody()) {
+          $json = json_decode($body);
+          $this->body = $json ?? $body;
+        }
+
         parent::__construct($this->message, $code);
     }
 
@@ -25,6 +39,16 @@ class ApiException extends \RuntimeException {
      */
     public function getResponse(){
         return $this->response;
+    }
+
+    /**
+     * Returns the body of the response.
+     *
+     * @return mixed
+     *   The body of the response if set.
+     */
+    public function getBody(){
+        return $this->body;
     }
 
 }

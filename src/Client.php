@@ -2,6 +2,7 @@
 namespace UKGovernmentBEIS\CompaniesHouse;
 
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\BadResponseException;
 use GuzzleHttp\Exception\ClientException;
 use http\Exception\BadMessageException;
 use http\Exception\InvalidArgumentException;
@@ -76,8 +77,14 @@ class Client {
      * @return array|null
      */
     public function registeredOfficeAddress(string $companyNumber) {
-        $response = $this->client()
-            ->get("/company/{$companyNumber}/registered-office-address");
+        try {
+            $response = $this->client()
+                ->get("/company/{$companyNumber}/registered-office-address");
+        }
+        catch (BadResponseException $e) {
+            $response = $e->getResponse();
+            return $this->handleException($response);
+        }
 
         return $this->handleResponse($response);
     }
@@ -93,8 +100,14 @@ class Client {
      * @return array|null
      */
     public function companyProfile(string $companyNumber) {
-        $response = $this->client()
-            ->get("/company/{$companyNumber}");
+        try {
+            $response = $this->client()
+                ->get("/company/{$companyNumber}");
+        }
+        catch (BadResponseException $e) {
+            $response = $e->getResponse();
+            return $this->handleException($response);
+        }
 
         return $this->handleResponse($response);
     }
@@ -114,14 +127,20 @@ class Client {
      * @return array|null
      */
     public function searchAll(string $q, int $items_per_page = 10, int $start_index = 0) {
-        $response = $this->client()
-            ->get("/search", [
-                'query' => array_filter([
-                    'q' => $q,
-                    'items_per_page' => $items_per_page,
-                    'start_index' => $start_index,
-                ])
-            ]);
+        try {
+            $response = $this->client()
+                ->get("/search", [
+                    'query' => array_filter([
+                        'q' => $q,
+                        'items_per_page' => $items_per_page,
+                        'start_index' => $start_index,
+                    ])
+                ]);
+        }
+        catch (BadResponseException $e) {
+            $response = $e->getResponse();
+            return $this->handleException($response);
+        }
 
         return $this->handleResponse($response);
     }
@@ -144,15 +163,21 @@ class Client {
      * @return array|null
      */
     public function searchCompanies(string $q, int $items_per_page = 10, int $start_index = 0, string $restrictions = null) {
-        $response = $this->client()
-            ->get("/search", [
-                'query' => array_filter([
-                    'q' => $q,
-                    'items_per_page' => $items_per_page,
-                    'start_index' => $start_index,
-                    'restrictions' => $restrictions,
-                ])
-            ]);
+        try {
+            $response = $this->client()
+                ->get("/search", [
+                    'query' => array_filter([
+                        'q' => $q,
+                        'items_per_page' => $items_per_page,
+                        'start_index' => $start_index,
+                        'restrictions' => $restrictions,
+                    ])
+                ]);
+        }
+        catch (BadResponseException $e) {
+            $response = $e->getResponse();
+            return $this->handleException($response);
+        }
 
         return $this->handleResponse($response);
     }
@@ -182,25 +207,57 @@ class Client {
      *   Known API exception errors.
      * @throws ClientException
      *   Unknown client errors, including rate limiting errors.
+     *
+     * @return mixed
+     *   The decoded json response.
      */
     private function handleResponse($response) {
+        $json = json_decode($response->getBody(), true);
+        $body = $json ?? $body;
+
+        // Data is mostly returned as JSON documents.
+        if (!is_array($body)) {
+            throw new BadMessageException('Malformed JSON response from server', $response->getStatusCode(), $body, $response);
+        }
+
+        if ($response->getStatusCode() === 200) {
+            return $body;
+        }
+        else {
+            return $this->handleException($response);
+        }
+    }
+
+    /**
+     * Handle the API exception.
+     *
+     * @param ResponseInterface $response
+     *   The response object.
+     *
+     * @return array
+     *   The response body returned from a successful request.
+     *
+     * @throws ApiException|NotFoundException|UnauthorisedException
+     *   Known API exception errors.
+     * @throws ClientException
+     *   Unknown client errors.
+     *
+     * @return null
+     *   Do not return anything.
+     */
+    private function handleException($response) {
         switch($response->getStatusCode()){
-            case 200:
-                $body = json_decode($response->getBody(), true);
-
-                // The expected response should always be JSON array.
-                if(!is_array($body)){
-                    throw new BadMessageException('Malformed JSON response from server', $response->getStatusCode(), $body, $response);
-                }
-
-                return $body;
             case 401:
                 throw new UnauthorisedException($response->getMessage(), $response->getStatusCode(), $response);
             case 404:
                 throw new NotFoundException($response->getMessage(), $response->getStatusCode(), $response);
+            case 429:
+                throw new RateLimitException($response->getMessage(), $response->getStatusCode(), $response);
             default:
                 throw new ApiException($response->getMessage(), $response->getStatusCode(), $response);
         }
+
+        return NULL;
     }
 
 }
