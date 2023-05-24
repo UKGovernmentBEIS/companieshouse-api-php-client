@@ -152,11 +152,11 @@ class Client {
      *
      * @param string $q
      *   The search term.
-     * @param int|null $items_per_page
+     * @param int $items_per_page
      *   Optional. The number of officers to return per page.
-     * @param int|null $start_index
+     * @param int $start_index
      *   Optional. The offset into the entire result set that this page starts.
-     * @param string|null $restrictions
+     * @param ?string $restrictions
      *   Optional. Enumerable options to restrict search results. Space separate multiple restriction options to combine
      *   functionality. For a "company name availability" search use "active-companies legally-equivalent-company-name" together.
      *
@@ -165,7 +165,7 @@ class Client {
     public function searchCompanies(string $q, int $items_per_page = 10, int $start_index = 0, string $restrictions = null) {
         try {
             $response = $this->client()
-                ->get("/search", [
+                ->get("/search/companies", [
                     'query' => array_filter([
                         'q' => $q,
                         'items_per_page' => $items_per_page,
