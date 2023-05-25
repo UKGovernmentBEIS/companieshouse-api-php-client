@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\ClientException;
 use http\Exception\BadMessageException;
 use http\Exception\InvalidArgumentException;
 use Psr\Http\Message\ResponseInterface;
+use Drupal\Component\Serialization\Json;
 
 
 class Client {
@@ -15,12 +16,31 @@ class Client {
      * @const string Current version of this client.
      * This follows Semantic Versioning (http://semver.org/)
      */
-    const VERSION = '2.0.0';
+    const VERSION = '1.0.0';
 
     /**
      * @const string The default API endpoint for Companies House.
      */
     const API_BASE_URL = 'https://api.companieshouse.gov.uk';
+
+    /**
+     * The error enum constant.
+     */
+    const ERROR_CODES = [
+      'access-denied' => "Access denied",
+      'company-profile-not-found' => "Company profile not found",
+      'company-insolvencies-not-found' => "Company insolvencies not found",
+      'etag-mismatch' => "An update was made to the {object} by another user during your session. Select the back button to see the updated version and to make further changes",
+      'invalid-authorization-header' => "Invalid authorization header",
+      'invalid-http-method' => "Access denied for HTTP method {method}",
+      'invalid-client-id' => "Invalid client ID",
+      'no-json-provided' => "No JSON payload provided",
+      'not-authorised-for-company' => "Not authorised to file for this company",
+      'transaction-not-open' => "Transaction is not open",
+      'transaction-does-not-exist' => "Transaction does not exist",
+      'user-transactions-not-found' => "No transactions found for this user",
+      'unauthorised' => "Unauthorised",
+    ];
 
     /**
      * @var HttpClientInterface PSR-7 compatible HTTP Client
@@ -83,7 +103,7 @@ class Client {
         }
         catch (BadResponseException $e) {
             $response = $e->getResponse();
-            return $this->handleException($response);
+            $this->handleException($response);
         }
 
         return $this->handleResponse($response);
@@ -106,7 +126,7 @@ class Client {
         }
         catch (BadResponseException $e) {
             $response = $e->getResponse();
-            return $this->handleException($response);
+            $this->handleException($response);
         }
 
         return $this->handleResponse($response);
@@ -139,7 +159,7 @@ class Client {
         }
         catch (BadResponseException $e) {
             $response = $e->getResponse();
-            return $this->handleException($response);
+            $this->handleException($response);
         }
 
         return $this->handleResponse($response);
@@ -176,7 +196,7 @@ class Client {
         }
         catch (BadResponseException $e) {
             $response = $e->getResponse();
-            return $this->handleException($response);
+            $this->handleException($response);
         }
 
         return $this->handleResponse($response);
@@ -224,7 +244,7 @@ class Client {
             return $body;
         }
         else {
-            return $this->handleException($response);
+            $this->handleException($response);
         }
     }
 
@@ -237,27 +257,47 @@ class Client {
      * @return array
      *   The response body returned from a successful request.
      *
-     * @throws ApiException|NotFoundException|UnauthorisedException
-     *   Known API exception errors.
-     * @throws ClientException
-     *   Unknown client errors.
+     * @see https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/resources/error?v=latest
      *
-     * @return null
-     *   Do not return anything.
+     * @throws RateLimitException|NotFoundException|UnauthorisedException
+     *   Known API exception errors.
+     * @throws ApiException
+     *   Unknown api errors.
      */
     private function handleException($response) {
-        switch($response->getStatusCode()){
-            case 401:
-                throw new UnauthorisedException($response->getMessage(), $response->getStatusCode(), $response);
-            case 404:
-                throw new NotFoundException($response->getMessage(), $response->getStatusCode(), $response);
-            case 429:
-                throw new RateLimitException($response->getMessage(), $response->getStatusCode(), $response);
-            default:
-                throw new ApiException($response->getMessage(), $response->getStatusCode(), $response);
-        }
+      try {
+        $body = Json::decode($response->getBody()->getContents());
 
-        return NULL;
+        // Errors are either represented singularly by the 'error' key.
+        if (isset($body['error']) && is_string($body['error'])) {
+          $message = self::ERROR_CODES[$body['error']] ?? $body['error'];
+        }
+        // Or they are represented as list of errors by the 'errors' key.
+        else if (isset($body['errors']) && is_array($body['errors'])) {
+          $errors = $body['errors'];
+          array_walk($errors, function (&$value) {
+            $value = self::ERROR_CODES[$value['error']] ?? $value['error'];
+          });
+          $message = implode(PHP_EOL, $errors);
+        }
+      }
+      catch (InvalidDataTypeException $e) {
+        $message = "Invalid response returned from the Companies House API.";
+      }
+      catch (RuntimeException $e) {
+        $message = "Unknown error occured.";
+      }
+
+      switch($response->getStatusCode()){
+          case 401:
+              throw new UnauthorisedException($message, $response->getStatusCode(), $response);
+          case 404:
+              throw new NotFoundException($message, $response->getStatusCode(), $response);
+          case 429:
+              throw new RateLimitException($message, $response->getStatusCode(), $response);
+          default:
+              throw new ApiException($message, $response->getStatusCode(), $response);
+      }
     }
 
 }
