@@ -19,7 +19,6 @@ class ApiException extends \RuntimeException {
      */
     private mixed $body;
 
-
     public function __construct(string $message, int $code, ResponseInterface $response) {
         $this->response = $response;
 
@@ -29,7 +28,7 @@ class ApiException extends \RuntimeException {
           $this->body = $json ?? $body;
         }
 
-        parent::__construct($this->message, $code);
+        parent::__construct($message, $code);
     }
 
     /**
