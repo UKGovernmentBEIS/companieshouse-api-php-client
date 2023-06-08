@@ -268,6 +268,10 @@ class Client {
       try {
         $body = Json::decode($response->getBody()->getContents());
 
+        // Set a default message for situations where an unanticipated
+        // response is received.
+        $message = "Unexpected response received.";
+
         // Errors are either represented singularly by the 'error' key.
         if (isset($body['error']) && is_string($body['error'])) {
           $message = self::ERROR_CODES[$body['error']] ?? $body['error'];
